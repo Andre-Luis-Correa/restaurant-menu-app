@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Card, Text, Button } from 'react-native-paper';
+import { Card, Text, Button, TextInput } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import data from '../../assets/data.json';
 
@@ -41,24 +41,26 @@ const PedidosScreen: React.FC = () => {
     <View style={styles.container}>
       {/* Filtros de Data */}
       <View style={styles.dateFilterContainer}>
-        <Button
+        <TextInput
           mode="outlined"
-          onPress={() => setShowInicialPicker(true)}
-          style={styles.dateButton}
-          labelStyle={styles.dateButtonLabel}
-        >
-          {dataInicial ? formatarDataBrasileira(dataInicial) : 'Data Inicial'}
-        </Button>
+          label="Data Inicial"
+          value={dataInicial ? formatarDataBrasileira(dataInicial) : ''}
+          onFocus={() => setShowInicialPicker(true)}
+          style={styles.dateInput}
+          right={<TextInput.Icon icon="calendar" onPress={() => setShowInicialPicker(true)} />}
+          editable={false}
+        />
       </View>
       <View style={styles.dateFilterContainer}>
-        <Button
+        <TextInput
           mode="outlined"
-          onPress={() => setShowFinalPicker(true)}
-          style={styles.dateButton}
-          labelStyle={styles.dateButtonLabel}
-        >
-          {dataFinal ? formatarDataBrasileira(dataFinal) : 'Data Final'}
-        </Button>
+          label="Data Final"
+          value={dataFinal ? formatarDataBrasileira(dataFinal) : ''}
+          onFocus={() => setShowFinalPicker(true)}
+          style={styles.dateInput}
+          right={<TextInput.Icon icon="calendar" onPress={() => setShowFinalPicker(true)} />}
+          editable={false}
+        />
       </View>
       <View style={styles.clearButtonContainer}>
         <Button
@@ -106,7 +108,10 @@ const PedidosScreen: React.FC = () => {
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => toggleExpand(item.id)}>
               <Card style={styles.card}>
-                <Card.Title title={`Pedido ${item.numeroPedido}`} subtitle={`Data: ${formatarDataBrasileira(new Date(item.data))}`} />
+                <Card.Title
+                  title={`Pedido ${item.numeroPedido}`}
+                  subtitle={`Data: ${formatarDataBrasileira(new Date(item.data))}`}
+                />
                 <Card.Content>
                   <Text style={styles.valor}>{`Valor: R$ ${item.valorReais.toFixed(2)} / ${item.valorPontos} pontos`}</Text>
                   {expanded === item.id && (
@@ -140,27 +145,24 @@ const styles = StyleSheet.create({
   clearButtonContainer: {
     marginBottom: 24, // Espaçamento maior antes da lista de pedidos
   },
-  dateButton: {
-    width: '100%',
-    borderRadius: 2,
-    borderColor: '#ccc',
-    backgroundColor: '#d3d3d3',
-  },
-  dateButtonLabel: {
-    fontSize: 14,
-    color: 'black',
+  dateInput: {
+    backgroundColor: '#fff',
+    fontSize: 16,
+    height: 50,
+    justifyContent: 'center',
   },
   clearButton: {
-    backgroundColor: 'tomato',
-    borderRadius: 2,
+    backgroundColor: 'black',
+    borderRadius: 5,
   },
   clearButtonLabel: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
   },
   card: {
     marginBottom: 16,
     backgroundColor: '#fff',
+    borderRadius: 10,
   },
   valor: {
     fontSize: 16,

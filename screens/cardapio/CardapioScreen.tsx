@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, TextInput } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { View, StyleSheet, FlatList, TextInput, Modal, TouchableOpacity } from 'react-native';
 import { Prato, Cardapio as CardapioProps } from '../../types/types';
 import data from '../../assets/data.json';
-import { Text, Card as PaperCard, Title, Paragraph, IconButton } from 'react-native-paper';
+import { Text, Card as PaperCard, Title, Paragraph, IconButton, Button } from 'react-native-paper';
 import { useCart } from '../../context/CartContext';
 
 const CardapioScreen: React.FC = () => {
@@ -12,6 +11,7 @@ const CardapioScreen: React.FC = () => {
   const [ordenacao, setOrdenacao] = useState<'preco' | 'pontos'>('preco');
   const [ordem, setOrdem] = useState<'asc' | 'desc'>('asc');
   const [busca, setBusca] = useState<string>('');
+  const [modalVisible, setModalVisible] = useState(false);
 
   const categorias = ['Todas', ...new Set(cardapio.pratos.map(prato => prato.categoria))];
 
@@ -39,19 +39,6 @@ const CardapioScreen: React.FC = () => {
         value={busca}
         onChangeText={setBusca}
       />
-
-      <Text style={styles.filterLabel}>Selecionar categoria:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={categoriaSelecionada}
-          onValueChange={(itemValue) => setCategoriaSelecionada(itemValue)}
-          style={styles.picker}
-        >
-          {categorias.map(categoria => (
-            <Picker.Item label={categoria} value={categoria} key={categoria} />
-          ))}
-        </Picker>
-      </View>
 
       <Text style={styles.filterLabel}>Ordenar por:</Text>
       <View style={styles.ordenacaoContainer}>
@@ -81,30 +68,65 @@ const CardapioScreen: React.FC = () => {
         </Text>
       </View>
 
+      <View style={styles.categoryContainer}>
+        <Text style={styles.filterLabel}>Categoria:</Text>
+        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.filterOptionSelected}>
+          <Text style={styles.categoryText}>{categoriaSelecionada}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.modalView}>
+          {categorias.map(categoria => (
+            <TouchableOpacity
+              key={categoria}
+              style={styles.modalButton}
+              onPress={() => {
+                setCategoriaSelecionada(categoria);
+                setModalVisible(false);
+              }}
+            >
+              <Text style={styles.modalButtonText}>{categoria}</Text>
+            </TouchableOpacity>
+          ))}
+          <Button mode="contained" onPress={() => setModalVisible(false)} style={styles.modalCloseButton}>
+            Fechar
+          </Button>
+        </View>
+      </Modal>
+
       <FlatList
         data={pratosFiltrados}
         renderItem={({ item }) => (
-          <PaperCard style={styles.card}>
-            <PaperCard.Cover source={{ uri: item.img }} style={styles.cardImage} />
-            <PaperCard.Content style={styles.cardContent}>
-              <View>
-                <Title style={styles.cardTitle}>{item.nome}</Title>
-                <Paragraph style={styles.cardDescription}>{item.descricao}</Paragraph>
-                <Text style={styles.categoria}>{item.categoria}</Text>
-              </View>
-              <View style={styles.cardFooter}>
-                <Text style={styles.priceText}>{`R$ ${item.valorReais.toFixed(2)} / ${item.valorPontos} pontos`}</Text>
-                <IconButton
-                  icon="cart-plus"
-                  size={24}
-                  onPress={() => addToCart(item)}
-                />
-              </View>
-            </PaperCard.Content>
-          </PaperCard>
+          <View style={styles.cardWrapper}>
+            <PaperCard style={styles.card}>
+              <PaperCard.Cover source={{ uri: item.img }} style={styles.cardImage} />
+              <PaperCard.Content style={styles.cardContent}>
+                <View>
+                  <Title style={styles.cardTitle}>{item.nome}</Title>
+                  <Paragraph style={styles.cardDescription}>{item.descricao}</Paragraph>
+                  <Text style={styles.categoria}>{item.categoria}</Text>
+                </View>
+                <View style={styles.cardFooter}>
+                  <Text style={styles.priceText}>{`R$ ${item.valorReais.toFixed(2)} / ${item.valorPontos} pontos`}</Text>
+                  <IconButton
+                    icon="cart-plus"
+                    size={24}
+                    onPress={() => addToCart(item)}
+                  />
+                </View>
+              </PaperCard.Content>
+            </PaperCard>
+          </View>
         )}
         keyExtractor={(item) => item.id}
-        style={styles.flatList}
       />
     </View>
   );
@@ -119,20 +141,12 @@ const styles = StyleSheet.create({
   searchInput: {
     marginTop: 24,
     backgroundColor: '#e0e0e0',
-    borderRadius: 5,
+    borderRadius: 2,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 16,
     marginBottom: 20,
-  },
-  pickerContainer: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 5,
-    marginBottom: 20,
-  },
-  picker: {
-    height: 50,
-    width: '100%',
+    height: 45
   },
   filterLabel: {
     fontSize: 18,
@@ -149,19 +163,51 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     padding: 8,
     backgroundColor: '#ddd',
-    borderRadius: 5,
     textAlign: 'center',
   },
   filterOptionSelected: {
     backgroundColor: '#333',
     color: '#fff',
+    padding: 8,
+    marginLeft:10
   },
-  flatList: {
-    marginTop: 10,
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingLeft: 10,
+  },
+  categoryText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  modalView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  modalButton: {
+    backgroundColor: '#fff',
+    padding: 15,
+    marginBottom: 10,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 18,
+  },
+  modalCloseButton: {
+    backgroundColor: 'black',
+    marginTop: 20,
+  },
+  cardWrapper: {
+    overflow: 'hidden',
+    marginBottom: 20,
+    borderRadius: 10,
   },
   card: {
     width: '100%',
-    marginBottom: 20,
     borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
@@ -169,7 +215,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    overflow: 'hidden',
   },
   cardImage: {
     height: 150,
