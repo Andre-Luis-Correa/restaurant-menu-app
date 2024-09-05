@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
-import { Text, Button, IconButton, Snackbar, Modal, Portal, RadioButton, Provider } from 'react-native-paper';
+import { Text, Button, IconButton, Snackbar, Modal, Portal, RadioButton, Provider, TextInput } from 'react-native-paper';
 import { useCart } from '../../context/CartContext';
 
 const CartScreen: React.FC = () => {
@@ -8,13 +8,31 @@ const CartScreen: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [appliedPoints, setAppliedPoints] = useState<string>(''); // Pontos aplicados pelo usuário
+  const [errorVisible, setErrorVisible] = useState(false); // Estado para exibir a mensagem de erro
+  const [isDiscountApplied, setIsDiscountApplied] = useState(false);
+  const userPoints = 200; // Pontos disponíveis para o cliente
 
   const onDismissSnackBar = () => setVisible(false);
+  const onDismissErrorSnackBar = () => setErrorVisible(false);
+
+  const calculateTotal = () => {
+    return cart.reduce((acc, item) => acc + item.valorReais * item.quantity, 0).toFixed(2);
+  };
+
+  const calculateDiscount = () => {
+    const pointsToApply = Math.min(Math.max(parseInt(appliedPoints) || 0, 0), userPoints); // Limitar pontos aplicados a 0 ou mais, mas não mais que os pontos disponíveis
+    return pointsToApply * 0.1; // Cada ponto equivale a 10 centavos
+  };
+
+  const calculateFinalTotal = () => {
+    return (parseFloat(calculateTotal()) - calculateDiscount()).toFixed(2);
+  };
 
   const handleCheckout = () => {
     Alert.alert(
       'Confirmação',
-      'Você tem certeza que deseja finalizar o pedido?',
+      `Você tem certeza que deseja finalizar o pedido? Total: R$ ${calculateFinalTotal()}`,
       [
         {
           text: 'Cancelar',
@@ -31,14 +49,26 @@ const CartScreen: React.FC = () => {
     );
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((acc, item) => acc + item.valorReais * item.quantity, 0).toFixed(2);
+  const handlePaymentSelection = () => {
+    if (selectedPayment) {
+      setPaymentModalVisible(false);
+      clearCart();
+      setVisible(true);
+    } else {
+      Alert.alert('Erro', 'Selecione uma forma de pagamento para confirmar.');
+    }
   };
 
-  const handlePaymentSelection = () => {
-    setPaymentModalVisible(false);
-    clearCart();
-    setVisible(true);
+  const handlePointsChange = (text: string) => {
+    const points = parseInt(text);
+    if (text === '' || (!isNaN(points) && points >= 0 && points <= userPoints)) {
+      setAppliedPoints(text);
+      setErrorVisible(false);
+      setIsDiscountApplied(true);
+    } else {
+      setErrorVisible(true);
+      setIsDiscountApplied(false);
+    }
   };
 
   return (
@@ -83,8 +113,34 @@ const CartScreen: React.FC = () => {
         )}
 
         {cart.length > 0 && (
-          <View style={styles.totalContainer}>
+          <View>
             <Text style={styles.totalText}>Total: R$ {calculateTotal()}</Text>
+
+            <Text style={styles.pointsText}>Pontos disponíveis: {userPoints}</Text>
+            <TextInput
+              label="Aplicar Pontos"
+              value={appliedPoints}
+              onChangeText={handlePointsChange}
+              keyboardType="numeric"
+              style={styles.pointsInput}
+              placeholder="Digite a quantidade de pontos"
+              theme={{ colors: { primary: 'black' } }}
+            />
+
+            {errorVisible && (
+              <Text style={styles.errorText}>Quantidade de pontos informada inválida.</Text>
+            )}
+
+            {isDiscountApplied && (
+              <>
+                <Text style={styles.discountText}>
+                  Desconto: R$ {calculateDiscount().toFixed(2)} ({Math.min(parseInt(appliedPoints) || 0, userPoints)} pontos)
+                </Text>
+                <Text style={styles.totalText}>
+                  Total com desconto: R$ {calculateFinalTotal()}
+                </Text>
+              </>
+            )}
           </View>
         )}
 
@@ -127,7 +183,12 @@ const CartScreen: React.FC = () => {
               <RadioButton.Item label="Dinheiro" value="dinheiro" />
               <RadioButton.Item label="Cartão" value="cartao" />
             </RadioButton.Group>
-            <Button mode="contained" onPress={handlePaymentSelection} style={styles.paymentButton}>
+            <Button
+              mode="contained"
+              onPress={handlePaymentSelection}
+              style={styles.paymentButton}
+              disabled={!selectedPayment} // Desativar botão se nenhum método de pagamento estiver selecionado
+            >
               Confirmar Pagamento
             </Button>
           </Modal>
@@ -149,7 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     backgroundColor: '#fff',
-    marginBottom: 10,
+    marginBottom: 20,
     borderRadius: 5,
   },
   itemDetails: {
@@ -182,14 +243,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'gray',
   },
-  totalContainer: {
-    paddingVertical: 15,
-    alignItems: 'flex-end',
-    marginBottom: 20,
-  },
   totalText: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 24,
+  },
+  pointsText: {
+    fontSize: 16,
+    color: 'green',
+    marginBottom: 15,
+  },
+  pointsInput: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  discountText: {
+    fontSize: 16,
+    color: 'red',
+    marginBottom: 24,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+    marginBottom: 24,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -233,7 +311,7 @@ const styles = StyleSheet.create({
   },
   paymentButton: {
     marginTop: 20,
-    backgroundColor: 'green'
+    backgroundColor: 'green',
   },
 });
 
