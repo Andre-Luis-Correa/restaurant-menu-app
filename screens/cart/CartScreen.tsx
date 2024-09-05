@@ -66,6 +66,7 @@ const CartScreen: React.FC = () => {
       setErrorVisible(false);
       setIsDiscountApplied(true);
     } else {
+      setAppliedPoints('');
       setErrorVisible(true);
       setIsDiscountApplied(false);
     }
